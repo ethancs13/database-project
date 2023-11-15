@@ -117,19 +117,54 @@ async function main(questions) {
                         }
                     ]).then((response) => {
                         db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${response.first}','${response.last}','${response.role}','${response.manager}');`
-                        , function (err, results) {
-                            console.log(results)
-                            main(questionsAlt);
-                        })
+                            , function (err, results) {
+                                console.log(results)
+                                main(questionsAlt);
+                            })
                     })
                     // Add logic for adding an employee
-                    
+
                     // console.log("Success.")
-                    
+
                     break;
 
                 case 'Update Employee Role':
                     // Add logic for updating employee role
+                    inquirer.prompt([{
+                        name: 'first_name',
+                        type: 'input',
+                        message: "Please enter the employee's first name to be changed.",
+                    },
+                    {
+                        name: 'last_name',
+                        type: 'input',
+                        message: "Please enter the employee's last name to be changed.",
+                    },
+                    ]).then((answer) => {
+                        console.log('First Name:', answer.first_name);
+                        console.log('Last Name:', answer.last_name);
+                        try {
+                            db.query(`
+                            SELECT *
+                            FROM employee
+                            WHERE first_name LIKE ? AND last_name LIKE ?;
+                            `, [`${answer.first_name}%`, `${answer.last_name}%`],
+                            function(err, results, fields) {
+                                if (results) {
+                                    console.log(rows.length);
+                                    console.table(rows);
+                                } else {
+                                    console.log('No matching employee found.');
+                                }
+                            })
+                            
+                        } catch (error) {
+                            console.error(error);
+                        }
+
+                        console.log('Success.')
+                        main(questionsAlt);
+                    })
                     break;
 
                 case 'View All Roles':
@@ -167,6 +202,7 @@ async function main(questions) {
 
                 case 'View All Departments':
                     // Add logic for viewing all departments
+
                     break;
 
                 case 'Add Department':
