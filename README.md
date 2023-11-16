@@ -31,6 +31,9 @@ Simply run the server.js file using npm start. Then you will be prompted to choo
 
 If you want to run your own local instance, follow the installation instructions included in this document.
 
+### Tutorial Video
+[![Watch the video](https://i.stack.imgur.com/PtbGQ.png)](/assets/tutorial.mp4)
+
 
 ### Prerequisites 📂
 You will need `node` installed on your computer in order to run this app.
