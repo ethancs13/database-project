@@ -54,7 +54,7 @@ const questions = [
             'View All Roles',
             'Add Role',
             'View All Departments',
-            'Add Department'
+            `Add Department\n`
         ]
     }
 ]
@@ -70,11 +70,14 @@ const questionsAlt = [
             'View All Roles',
             'Add Role',
             'View All Departments',
-            'Add Department'
+            `Add Department\n`
         ]
     }
 ]
-
+const heading = `+----------------------------------+
+|         Company Database         |
++----------------------------------+`
+console.log(heading)
 // question list
 async function main(questions) {
 
@@ -88,7 +91,7 @@ async function main(questions) {
                     // Use queryAsync to perform the database query
                     db.query(`SELECT e.id AS employee_id, e.first_name, e.last_name, r.title AS job_title, d.name AS department, r.salary, m.first_name AS manager_first_name, m.last_name AS manager_last_name FROM employee e JOIN role r ON e.role_id = r.id JOIN department d ON r.department_id = d.id INNER JOIN employee m ON e.manager_id = m.id;
                 `, function (err, results) {
-                        console.log(results);
+                        console.table(results);
                         main(questionsAlt);
                     });
                     break;
@@ -116,11 +119,10 @@ async function main(questions) {
                             message: 'Please enter the manager for this employee.'
                         }
                     ]).then((response) => {
-                        db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${response.first}','${response.last}','${response.role}','${response.manager}');`
-                            , function (err, results) {
-                                console.log(results)
-                                main(questionsAlt);
-                            })
+                        db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${response.first}','${response.last}','${response.role}','${response.manager}');`)
+                        db.query(`SELECT * FROM employee;`, (err, res) => {
+                            console.table(res)
+                        })
                     })
                     // Add logic for adding an employee
 
@@ -130,41 +132,74 @@ async function main(questions) {
 
                 case 'Update Employee Role':
                     // Add logic for updating employee role
-                    inquirer.prompt([{
-                        name: 'first_name',
-                        type: 'input',
-                        message: "Please enter the employee's first name to be changed.",
-                    },
-                    {
-                        name: 'last_name',
-                        type: 'input',
-                        message: "Please enter the employee's last name to be changed.",
-                    },
-                    ]).then((answer) => {
-                        console.log('First Name:', answer.first_name);
-                        console.log('Last Name:', answer.last_name);
-                        try {
-                            db.query(`
-                            SELECT *
-                            FROM employee
-                            WHERE first_name LIKE ? AND last_name LIKE ?;
-                            `, [`${answer.first_name}%`, `${answer.last_name}%`],
-                            function(err, results, fields) {
-                                if (results) {
-                                    console.log(rows.length);
-                                    console.table(rows);
-                                } else {
-                                    console.log('No matching employee found.');
-                                }
-                            })
-                            
-                        } catch (error) {
-                            console.error(error);
-                        }
+                    namePrompt()
+                    async function namePrompt() {
+                        await inquirer.prompt(
+                            {
+                                name: 'name',
+                                type: 'input',
+                                message: "Please enter the employee's full name",
+                            }
+                        ).then((answer) => {
 
-                        console.log('Success.')
-                        main(questionsAlt);
-                    })
+                            let full_name = answer.name.split(' ');
+                            let first_name = full_name[0];
+
+                            let last_name = full_name[1];
+
+                            if (answer.name == '' || !answer.name) {
+                                console.log('No name entered.')
+                                namePrompt()
+                                return;
+                            }
+
+                            try {
+                                db.query(`
+                                SELECT *
+                                FROM employee
+                                WHERE first_name LIKE '${first_name}%'
+                                AND last_name LIKE '${last_name}%';`,
+
+                                    function (err, results, fields) {
+
+                                        if (results.length < 1) {
+                                            console.log('No matching employee found.');
+                                            namePrompt();
+                                            return;
+                                        }
+                                        if (err) {
+                                            console.error(err);
+
+                                        } else if (results) {
+                                            console.table(results);
+
+                                            inquirer.prompt(
+                                                {
+                                                    name: 'role',
+                                                    type: 'input',
+                                                    message: "Please enter the employee's new role ID",
+                                                }
+                                            ).then((answer) => {
+                                                try {
+                                                    db.query(`UPDATE employee SET role_id=${answer.role} WHERE first_name LIKE '${first_name}%'
+                                                    AND last_name LIKE '${last_name}%';`);
+                                                } catch (err) {
+                                                    console.error(err)
+                                                    return;
+                                                }
+
+                                                console.log('Employee role ID updated successfully.')
+                                                main(questionsAlt);
+                                                return;
+                                            })
+                                        }
+                                    })
+
+                            } catch (error) {
+                                console.error(error);
+                            }
+                        })
+                    }
                     break;
 
                 case 'View All Roles':
@@ -202,7 +237,13 @@ async function main(questions) {
 
                 case 'View All Departments':
                     // Add logic for viewing all departments
-
+                    try {
+                        db.query(`SELECT * FROM department;`, function (err, res, fields) {
+                            console.table(res);
+                        })
+                    } catch (err) {
+                        console.error(err);
+                    }
                     break;
 
                 case 'Add Department':
@@ -221,9 +262,9 @@ async function main(questions) {
                     break;
 
                 default:
-                    console.log('Invalid choice');
-                // inquirer.prompt(questions);
-
+                    console.log('Invalid option.');
+                    main(questions);
+                    return;
             }
 
         })
@@ -231,9 +272,6 @@ async function main(questions) {
             if (error) {
                 // Prompt couldn't be rendered in the current environment
                 console.error(error)
-            } else {
-                // Something else went wrong
-                console.log('success')
             }
         });
 
