@@ -120,9 +120,14 @@ async function main(questions) {
                         }
                     ]).then((response) => {
                         db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${response.first}','${response.last}','${response.role}','${response.manager}');`)
-                        db.query(`SELECT * FROM employee;`, (err, res) => {
-                            console.table(res)
-                        })
+                        db.query(`SELECT *
+                        FROM employee
+                        WHERE first_name LIKE '${response.first}%'
+                        AND last_name LIKE '${response.last}%';`,
+                            (err, res) => {
+                                console.table(res)
+                                main(questionsAlt)
+                            })
                     })
                     // Add logic for adding an employee
 
@@ -187,9 +192,17 @@ async function main(questions) {
                                                     console.error(err)
                                                     return;
                                                 }
+                                                db.query(`
+                                                    SELECT *
+                                                    FROM employee
+                                                    WHERE first_name LIKE '${first_name}%'
+                                                    AND last_name LIKE '${last_name}%';`, (err, res) => {
+                                                    console.table(res)
+                                                    console.log('Employee role ID updated successfully.')
+                                                    main(questionsAlt);
+                                                    return;
+                                                })
 
-                                                console.log('Employee role ID updated successfully.')
-                                                main(questionsAlt);
                                                 return;
                                             })
                                         }
@@ -205,8 +218,12 @@ async function main(questions) {
                 case 'View All Roles':
                     // Add logic for viewing all roles
                     // job title, role id, the department that role belongs to, and the salary for that role
-                    db.query(`SELECT role.title AS Job_Title, role.id AS role_id, department.name AS department_name, role.salary FROM role JOIN department ON role.department_id = department.id;`)
-                    main(questionsAlt);
+                    db.query(`SELECT role.title AS Job_Title, role.id AS role_id, department.name AS department_name, role.salary FROM role JOIN department ON role.department_id = department.id;`,
+                        (err, res) => {
+                            console.table(res)
+                            main(questionsAlt);
+                        })
+
                     break;
 
                 case 'Add Role':
@@ -229,9 +246,12 @@ async function main(questions) {
                         }]).then((responses) => {
                             db.query(`INSERT INTO role (title, salary, department_id)
                         VALUES ("${responses.name}",${responses.salary}, ${responses.department});
-                        `);
-                            console.log('Saved.')
-                            main(questionsAlt);
+                        `, (err, res) => {
+                                console.log('Role added successfully.')
+                                main(questionsAlt);
+                                return;
+                            });
+
                         })
                     break;
 
@@ -240,13 +260,14 @@ async function main(questions) {
                     try {
                         db.query(`SELECT * FROM department;`, function (err, res, fields) {
                             console.table(res);
+                            main(questionsAlt);
                         })
                     } catch (err) {
                         console.error(err);
                     }
                     break;
 
-                case 'Add Department':
+                case 'Add Department\n':
                     // Add logic for adding a department
                     inquirer.prompt({
                         name: 'department_name',
@@ -256,7 +277,7 @@ async function main(questions) {
                         db.query(`INSERT INTO department (name)
                         VALUES ("${answer.department_name}");
                         `)
-                        console.log('Success.')
+                        console.log('Department added successfully.')
                         main(questionsAlt);
                     })
                     break;
